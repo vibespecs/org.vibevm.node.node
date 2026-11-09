@@ -27,6 +27,7 @@ platform = "linux"
 platform_name = "Linux (glibc)"
 arch = "x86_64"
 arch_name = "Intel/AMD 64-bit"
+path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
@@ -62,17 +63,6 @@ executable = "bin/node"
 args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"
 
 
 [[installer_options]]
@@ -82,6 +72,7 @@ platform = "linux"
 platform_name = "Linux (glibc)"
 arch = "aarch64"
 arch_name = "ARM 64-bit"
+path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
@@ -117,17 +108,6 @@ executable = "bin/node"
 args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"
 
 
 [[installer_options]]
@@ -137,6 +117,7 @@ platform = "linux-musl"
 platform_name = "Linux (musl: Alpine and others)"
 arch = "x86_64"
 arch_name = "Intel/AMD 64-bit"
+path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
@@ -172,17 +153,6 @@ executable = "bin/node"
 args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"
 
 
 [[installer_options]]
@@ -192,6 +162,7 @@ platform = "macos"
 platform_name = "macOS"
 arch = "x86_64"
 arch_name = "Intel 64-bit"
+path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
@@ -227,17 +198,6 @@ executable = "bin/node"
 args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"
 
 
 [[installer_options]]
@@ -247,6 +207,7 @@ platform = "macos"
 platform_name = "macOS"
 arch = "aarch64"
 arch_name = "Apple silicon"
+path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
@@ -282,17 +243,6 @@ executable = "bin/node"
 args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"
 
 
 [[installer_options]]
@@ -302,6 +252,7 @@ platform = "windows"
 platform_name = "Windows"
 arch = "x86_64"
 arch_name = "Intel/AMD 64-bit"
+path_dirs = ["."]
 
 [[installer_options.steps]]
 id = "node"
@@ -337,17 +288,6 @@ executable = "node.exe"
 args = ["$app_root/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"
 
 
 [[installer_options]]
@@ -357,6 +297,7 @@ platform = "windows"
 platform_name = "Windows"
 arch = "aarch64"
 arch_name = "ARM 64-bit"
+path_dirs = ["."]
 
 [[installer_options.steps]]
 id = "node"
@@ -392,14 +333,3 @@ executable = "node.exe"
 args = ["$app_root/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"

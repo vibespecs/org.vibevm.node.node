@@ -53,16 +53,20 @@ def main():
         root = archive.rsplit(".tar.gz", 1)[0].rsplit(".zip", 1)[0]
         # The Windows zip keeps node.exe and npm's own tree at its top level;
         # the POSIX tarballs use the usual bin/ and lib/ prefixes.
+        # `path_dirs` exposes that same directory whole, because npm writes
+        # new commands into it: a global `npm install -g` puts them beside
+        # node, and a fixed per-command proxy set could never reach them.
         if platform == "windows":
-            node, npm_root = "node.exe", "node_modules/npm/bin"
+            node, npm_root, path_dir = "node.exe", "node_modules/npm/bin", "."
         else:
-            node, npm_root = "bin/node", "lib/node_modules/npm/bin"
+            node, npm_root, path_dir = "bin/node", "lib/node_modules/npm/bin", "bin"
         out.append(OPTION.format(
             option=option, platform=platform, platform_name=platform_name,
             arch=arch, arch_name=arch_name, node=NODE,
             fmt="zip" if suffix.endswith(".zip") else "tar_gz",
             url=f"{NODE_URL}/{archive}", sha=node_sums[archive], size=size[archive],
             payload_root=root, node_exe=node, npm_root=npm_root,
+            path_dir=path_dir,
         ))
     sys.stdout.write("\n".join(out))
 
@@ -89,10 +93,16 @@ id = "node"
 keywords = ["node", "nodejs", "npm", "javascript"]
 '''
 
-# Every option is one verified archive and three launchers. All three run the
-# payload's own node executable: npm and npx are started on their CLI scripts
-# the way Node's own wrappers do, so no launcher depends on a shell script, a
-# .cmd file or a node already on PATH.
+# Every option is one verified archive, three launchers and the one payload
+# directory it exposes whole on PATH. The launchers all run the payload's own
+# node executable: npm and npx are started on their CLI scripts the way
+# Node's own wrappers do, so no launcher depends on a shell script, a .cmd
+# file or a node already on PATH — that is what `vibe app run` uses.
+#
+# PATH itself comes from `path_dirs`, not from per-command proxies: npm's own
+# global installs write new commands (and on Windows their .cmd wrappers)
+# into this very directory after vibe has finished installing, so the whole
+# directory has to be what goes on PATH.
 OPTION = '''
 [[installer_options]]
 id = "{option}"
@@ -101,6 +111,7 @@ platform = "{platform}"
 platform_name = "{platform_name}"
 arch = "{arch}"
 arch_name = "{arch_name}"
+path_dirs = ["{path_dir}"]
 
 [[installer_options.steps]]
 id = "node"
@@ -136,17 +147,6 @@ executable = "{node_exe}"
 args = ["$app_root/{npm_root}/npx-cli.js"]
 kind = "command"
 
-[[installer_options.public_commands]]
-name = "node"
-launcher = "node"
-
-[[installer_options.public_commands]]
-name = "npm"
-launcher = "npm"
-
-[[installer_options.public_commands]]
-name = "npx"
-launcher = "npx"
 '''
 
 if __name__ == "__main__":

@@ -16,13 +16,27 @@ npm --version
 npx --version
 ```
 
-The three commands appear in `opt/bin` of the Vibe settings directory
-(`~/.vibe/opt/bin` by default) as PATH proxies; put that directory on PATH
-(`vibe self doctor --fix`), or open a shell with `vibe shell`.
+Node's own directory goes on PATH whole, not three per-command proxies: the
+option declares `path_dirs`, and Vibe links the payload's `bin` (the payload
+root on Windows, where `node.exe` and `npm.cmd` live) at
+`<settings>/opt/paths/node/0` and puts that link directory on your durable
+PATH. Everything in it is therefore reachable — including the commands
+`npm install -g` writes there *after* Vibe is done, which a fixed proxy set
+could never expose.
+
+```text
+npm install -g prettier
+prettier --version        # npm wrote it into the payload; the link exposes it
+```
+
+One link per slot, so two installed versions never collide: `vibe app use
+node org.vibevm.node/node@<version>` repoints the link, and `vibe app use
+node --none` removes it so the system's own `node` answers again until
+`vibe app use node --default`.
 
 This is the Node.js another Vibe application can run on. A package whose
 launcher is declared `executable = "command:node"` runs whichever `node` is on
-PATH when it starts — the system's, or this one.
+PATH when it starts — the system's, or this one, reached through that link.
 
 ## Targets
 
@@ -41,7 +55,7 @@ cannot decide. A musl system (Alpine and others) is detected as `linux` like
 any other Linux, so install there with `vibe install -g org.vibevm.node/node
 --platform linux-musl`.
 
-## How the three commands are launched
+## How the three launchers run
 
 The archive is unpacked with its own top-level directory stripped
 (`payload_root`), so the payload is Node's own tree: `bin/node` and
@@ -61,11 +75,14 @@ script, on a `.cmd` file or on a `node` already on PATH, so the same three
 rows work on every target, and `npm` keeps working on Windows without
 PowerShell execution policy entering the picture.
 
+These launchers are what `vibe app run org.vibevm.node/node npm` uses, and
+what a graphical client lists. PATH is the other surface, and the one above:
+it is the payload directory itself, so `node`, `npm`, `npx`, `corepack` and
+every later global install are all reached the way Node expects.
+
 The Linux and macOS tarballs carry three relative symbolic links
 (`bin/npm`, `bin/npx`, `bin/corepack`) pointing inside the payload; Vibe
-1.0.12 unpacks those, which is why `min_vibe_version` is `1.0.12`. The
-launchers do not use them — they are there for a shell that puts the
-payload's `bin` on PATH itself.
+1.0.12 unpacks those, and the link directory exposes them as they are.
 
 ## Closed networks
 
