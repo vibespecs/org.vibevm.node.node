@@ -1,3 +1,7 @@
+# Rendered by org.vibevm.node/vibevm-package-generator 1.0.0 (vibevm-generate-package-node). Do not edit.
+# input SHASUMS256.txt sha256 = aec92ae945293821c22aed4c37b97741688254bac353b861fc9fb25b81ce4567
+# input SIZES sha256 = 79281dfec99ef41a1550eb4cbc83f1a23e32737d9b8177dda9401bc3398a1d0f
+# re-render: vibevm-generate-package-node --node 24.22.2 SHASUMS256.txt SIZES > vibe.toml
 [package]
 name = "node"
 group = "org.vibevm.node"

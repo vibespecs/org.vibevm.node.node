@@ -1,19 +1,48 @@
 # Node.js application package
 
-This package installs [Node.js](https://nodejs.org/) 24.22.2 — the official
-upstream build, unmodified — as a portable Vibe user application, and puts
-`node`, `npm` and `npx` on PATH. It contains no binaries: each installation
-downloads one pinned archive and verifies it against its SHA-256 digest.
+This package installs [Node.js](https://nodejs.org/) — the official upstream
+build, unmodified — as a portable Vibe user application, and puts `node`,
+`npm` and `npx` on PATH. It contains no binaries: each installation downloads
+one pinned archive and verifies it against its SHA-256 digest.
 
 | Archive | From | Digest from |
 | --- | --- | --- |
-| `node-v24.22.2-<platform>.tar.gz` / `.zip` | `https://nodejs.org/dist/v24.22.2/` | `SHASUMS256.txt` of that release |
+| `node-v<version>-<platform>.tar.gz` / `.zip` | `https://nodejs.org/dist/v<version>/` | `SHASUMS256.txt` of that release |
 
 ```text
 vibe install -g org.vibevm.node/node
 node --version
 npm --version
 npx --version
+```
+
+## Published versions
+
+Two Node.js releases are published from this one repository, each as its own
+tag with its own rendered `vibe.toml`:
+
+| Version | Tag | Line |
+| --- | --- | --- |
+| 24.22.2 | `v24.22.2` | current |
+| 22.23.4 | `v22.23.4` | maintenance |
+
+`main` carries the newest of them; an older release stays reachable at its
+tag, which is what the registry resolves. Install a specific one by version:
+
+```text
+vibe install -g org.vibevm.node/node@24
+vibe install -g org.vibevm.node/node@22
+```
+
+Both can be installed at the same time. They share the `node` slot, so one of
+them answers `node` at a time and the other waits:
+
+```text
+vibe app alternatives node                 # every installed provider
+vibe app use node org.vibevm.node/node@22.23.4
+node -v                                   # v22.23.4
+vibe app use node org.vibevm.node/node@24.22.2
+node -v                                   # v24.22.2
 ```
 
 Node's own directory goes on PATH whole, not three per-command proxies: the
@@ -29,10 +58,11 @@ npm install -g prettier
 prettier --version        # npm wrote it into the payload; the link exposes it
 ```
 
-One link per slot, so two installed versions never collide: `vibe app use
-node org.vibevm.node/node@<version>` repoints the link, and `vibe app use
-node --none` removes it so the system's own `node` answers again until
-`vibe app use node --default`.
+One link per slot, so two installed versions never collide — and neither do
+their globals: `npm install -g` writes into the payload of whichever version
+is current, so a package installed under 22 is not on PATH under 24 and the
+two never share a `node_modules`. `vibe app use node --none` removes the link
+so the system's own `node` answers again until `vibe app use node --default`.
 
 This is the Node.js another Vibe application can run on. A package whose
 launcher is declared `executable = "command:node"` runs whichever `node` is on
@@ -42,13 +72,13 @@ PATH when it starts — the system's, or this one, reached through that link.
 
 | Installer option | `--platform` / `--arch` | Archive |
 | --- | --- | --- |
-| `linux-x64` | `linux` / `x86_64` | `node-v24.22.2-linux-x64.tar.gz` |
-| `linux-arm64` | `linux` / `aarch64` | `node-v24.22.2-linux-arm64.tar.gz` |
-| `linux-musl-x64` | `linux-musl` / `x86_64` | `node-v24.22.2-linux-x64-musl.tar.gz` |
-| `macos-x64` | `macos` / `x86_64` | `node-v24.22.2-darwin-x64.tar.gz` |
-| `macos-arm64` | `macos` / `aarch64` | `node-v24.22.2-darwin-arm64.tar.gz` |
-| `windows-x64` | `windows` / `x86_64` | `node-v24.22.2-win-x64.zip` |
-| `windows-arm64` | `windows` / `aarch64` | `node-v24.22.2-win-arm64.zip` |
+| `linux-x64` | `linux` / `x86_64` | `node-v<version>-linux-x64.tar.gz` |
+| `linux-arm64` | `linux` / `aarch64` | `node-v<version>-linux-arm64.tar.gz` |
+| `linux-musl-x64` | `linux-musl` / `x86_64` | `node-v<version>-linux-x64-musl.tar.gz` |
+| `macos-x64` | `macos` / `x86_64` | `node-v<version>-darwin-x64.tar.gz` |
+| `macos-arm64` | `macos` / `aarch64` | `node-v<version>-darwin-arm64.tar.gz` |
+| `windows-x64` | `windows` / `x86_64` | `node-v<version>-win-x64.zip` |
+| `windows-arm64` | `windows` / `aarch64` | `node-v<version>-win-arm64.zip` |
 
 Vibe picks the option of the host's platform and architecture and asks when it
 cannot decide. A musl system (Alpine and others) is detected as `linux` like
@@ -138,20 +168,30 @@ supported).
 
 ## Maintaining
 
-`vibe.toml` is rendered by `tools/render-manifest.py` from the release's
-`SHASUMS256.txt` and a file of archive sizes; it fetches nothing. To move to a
-new Node.js release: change `NODE` in the script, download every archive,
-verify it against `SHASUMS256.txt`, check that each archive's top-level
-directory still matches `payload_root` and that the launcher paths still exist,
-render, and install on at least Linux and Windows.
+`vibe.toml` is **rendered, never edited**. Its renderer is a package of its
+own — `org.vibevm.node/vibevm-package-generator`, which carries the whole
+`org.vibevm.node` family — so this repository ships no tooling:
 
 ```text
-python3 -I tools/render-manifest.py SHASUMS256.txt SIZES > vibe.toml
+vibe install -g org.vibevm.node/vibevm-package-generator
+vibevm-generate-package-node --node 24.22.2 SHASUMS256.txt SIZES > vibe.toml
 ```
+
+`SHASUMS256.txt` is the release's own checksum asset and `SIZES` a file of
+`<bytes> <name>` lines for the same archives (`stat -c '%s %n' *`). The
+renderer fetches nothing; the rendered header records the generator version
+and the SHA-256 of both inputs, and re-rendering from the same inputs is
+byte-identical.
+
+To move to a new Node.js release: download every archive of that release,
+verify it against `SHASUMS256.txt`, check that each archive's top-level
+directory still matches `payload_root` and that the launcher paths still
+exist, render, re-render and compare, and install on at least Linux and
+Windows.
 
 ## License
 
-This package (its manifest, tools and documents) is UPL-1.0, see `LICENSE.md`.
+This package (its manifest and documents) is UPL-1.0, see `LICENSE.md`.
 Node.js itself is not: it is distributed under the MIT license together with
 the licenses listed in its own `LICENSE`, which every installation keeps in
 the payload root.
