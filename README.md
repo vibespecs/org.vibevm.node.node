@@ -16,23 +16,45 @@ npm --version
 npx --version
 ```
 
-## Published versions
+## One template, every release
 
-Two Node.js releases are published from this one repository, each as its own
-tag with its own rendered `vibe.toml`:
+`vibe.toml` on `master` is a **template manifest** (`[package] template =
+true`): it is written once with `{version}` and `{sha256:…}` variables plus a
+`[template]` declaration naming where the versions and the digests come from,
+and Vibe renders it on your machine, at resolution time, for whichever version
+you ask for. Every Node.js release from 12.0.0 up is therefore installable
+from this one file, and moving to a new release needs no change here at all.
+
+| What | Where it comes from |
+| --- | --- |
+| the versions | `https://nodejs.org/dist/index.json` (`strip_prefix = "v"`, `min = "12.0.0"`) |
+| the digests | `https://nodejs.org/dist/v<version>/SHASUMS256.txt` |
+| the channels | the records' own `lts` field: `lts` and `lts/<codename>` |
+
+```text
+vibe install -g org.vibevm.node/node@lts        # the newest LTS release
+vibe install -g org.vibevm.node/node@lts/jod    # the newest of one LTS line
+vibe install -g org.vibevm.node/node@24         # any version requirement
+vibe install -g org.vibevm.node/node@=12.0.0    # one exact release
+```
+
+The template itself has a version of its own — the **template revision**,
+`1.0.0`, carried by the tag `v1.0.0`. A revision is never a Node.js version:
+it is excluded from the version domain, and bumping it is how a fix to the
+manifest's shape reaches users without republishing anything per release.
+
+Two Node.js releases also stay **published concretely**, each as its own tag
+with the manifest the retired generator rendered:
 
 | Version | Tag | Line |
 | --- | --- | --- |
 | 24.22.2 | `v24.22.2` | current |
 | 22.23.4 | `v22.23.4` | maintenance |
 
-`main` carries the newest of them; an older release stays reachable at its
-tag, which is what the registry resolves. Install a specific one by version:
-
-```text
-vibe install -g org.vibevm.node/node@24
-vibe install -g org.vibevm.node/node@22
-```
+A concretely published version always wins over the template's rendering of
+the same version, and the template is then not rendered for it at all — which
+is how one release can be hand-fixed without touching the template, and why
+these two tags are kept rather than deleted.
 
 Both can be installed at the same time. They share the `node` slot, so one of
 them answers `node` at a time and the other waits:
@@ -84,6 +106,23 @@ Vibe picks the option of the host's platform and architecture and asks when it
 cannot decide. A musl system (Alpine and others) is detected as `linux` like
 any other Linux, so install there with `vibe install -g org.vibevm.node/node
 --platform linux-musl`.
+
+Three of those seven rows are declared `template_optional = true`, because
+upstream has not built them for every release in the window — measured over
+the 406 releases from 12.0.0 to 26.13.0:
+
+| Row | Absent for | First release that has it |
+| --- | --- | --- |
+| `linux-musl-x64` | 389 of 406 | 22.23.3, and still missing in places above it |
+| `macos-arm64` | 132 of 406 | 16.0.0 (Apple silicon) |
+| `windows-arm64` | 234 of 406 | 19.9.0 |
+
+Such a row is **dropped from the rendered manifest** when the release's
+`SHASUMS256.txt` does not carry its archive, so an old version installs with
+the targets it really has instead of pointing at an archive that does not
+exist; asking for a dropped target refuses by name (`no_option`). Every other
+row is required, and a release missing one of those is a loud refusal rather
+than a quiet manifest. All seven are present together only from 26.8.0 up.
 
 ## How the three launchers run
 
@@ -166,28 +205,75 @@ With a proxy instead of a drop, the archive is downloaded through the
 `[proxy]` the site profile declares (`mode = "px"` with a PAC file is
 supported).
 
-## Maintaining
+Because the manifest is a template, a closed network also has to reach the
+two documents it declares — the version list and the release's checksum
+document. Both are ordinary remappable artifacts (`template-index` and
+`template-digest`), so one `[[remap]]` row relocates them onto a mirror or
+the filesystem, with the declaration itself unchanged:
 
-`vibe.toml` is **rendered, never edited**. Its renderer is a package of its
-own — `org.vibevm.node/vibevm-package-generator`, which carries the whole
-`org.vibevm.node` family — so this repository ships no tooling:
-
-```text
-vibe install -g org.vibevm.node/vibevm-package-generator
-vibevm-generate-package-node --node 24.22.2 SHASUMS256.txt SIZES > vibe.toml
+```toml
+[[remap]]
+prefix = "https://nodejs.org/dist/"
+path = "/srv/node-dist"      # holds index.json and v<version>/SHASUMS256.txt
+reason = "the site's mirror of the Node.js release host"
 ```
 
-`SHASUMS256.txt` is the release's own checksum asset and `SIZES` a file of
-`<bytes> <name>` lines for the same archives (`stat -c '%s %n' *`). The
-renderer fetches nothing; the rendered header records the generator version
-and the SHA-256 of both inputs, and re-rendering from the same inputs is
-byte-identical.
+`vibe remap explain` answers for those two fetches like any other, and
+`--offline` then resolves from
+`<settings>/cache/templates/org.vibevm.node/node/` with no request at all.
 
-To move to a new Node.js release: download every archive of that release,
-verify it against `SHASUMS256.txt`, check that each archive's top-level
-directory still matches `payload_root` and that the launcher paths still
-exist, render, re-render and compare, and install on at least Linux and
-Windows.
+## Maintaining
+
+`vibe.toml` is **authored here, by hand, once** — and then not touched per
+release. A new Node.js release needs no commit in this repository: it appears
+in `https://nodejs.org/dist/index.json`, and the next resolution renders it.
+
+The generator that used to render one manifest per release,
+`org.vibevm.node/vibevm-package-generator`, is **superseded** by the
+`[template]` declaration and is not used any more. Its repository records
+that. Two things it did are deliberately lost with it:
+
+- **`size` on the archive steps.** nodejs.org publishes digests but no sizes,
+  and the generator read them from a hand-made `SIZES` file. A rendered
+  manifest therefore carries no `size`; the step panel falls back to the
+  server's `Content-Length`, and a mirror's byte total is a lower bound.
+- **The provenance header.** A rendered manifest is produced on the client
+  from the template at its revision and the release's own `SHASUMS256.txt`;
+  the lock and the installation record carry the template revision, the
+  rendered manifest's SHA-256 and the digest document's, which is where that
+  provenance lives now.
+
+What still has to be checked when upstream changes shape, rather than merely
+publishing another release:
+
+- a new target (`files[]` gains an archive) — a new `[[installer_options]]`
+  row, `template_optional = true` until every release in the window has it;
+- a target upstream stops building — the row becomes `template_optional`
+  rather than disappearing, so old versions keep installing;
+- `payload_root`, the launcher paths, or the archive naming changing — the
+  template names all three, and the `{version}` spelling is the only part
+  that varies per release;
+- the two published tags: they are *not* re-rendered, by design.
+
+The template's regression gate is in the vibe repository, not here:
+`cargo test -p vibe-template --test node_golden` renders this file at
+`24.22.2` and `22.23.4` and compares it, byte for byte, with the manifests
+the two tags carry (modulo the generator's four header lines and the `size`
+lines), reading upstream's own frozen `index.json` subset and
+`SHASUMS256.txt` documents. `cargo test -p vibe-cli --test cli_template_node`
+drives the channels and the optional rows through the real binary. A change
+to this file that breaks either is a change that would have broken an
+install.
+
+**Not published yet.** Template resolution works today from every
+directory-shaped registry (`--registry DIR`, a `localdir` source, a
+`monorepo` working copy, a mirrored layout registry); rendering a template
+found in a **per-package git registry** is the one part of PROP-075
+`#TEMPLATE-DISCOVERY` still to be implemented. Until then this repository is
+not republished, because a client resolving it through a git registry would
+see the template revision `1.0.0` as if it were a Node.js version. The
+revision is deliberately numbered below every produced version so that even
+such a client prefers a real one.
 
 ## License
 
