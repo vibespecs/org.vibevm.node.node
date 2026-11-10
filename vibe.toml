@@ -2,7 +2,7 @@
 name = "node"
 group = "org.vibevm.node"
 kind = "app"
-version = "1.0.0"
+version = "1.1.0"
 epoch = 1
 template = true
 format = "normal"
@@ -19,6 +19,51 @@ requires_kinds = []
 [application]
 id = "node"
 keywords = ["node", "nodejs", "npm", "javascript"]
+
+# The version files a Node project pins its runtime with, in the order that
+# breaks a tie inside one directory. `.nvmrc` is nvm's own file and comes
+# first; `.node-version` is the one nodenv, fnm and asdf's node plugin read.
+# Both hold one bare version and nothing else, which is `format = "plain"`.
+[[application.version_file]]
+format = "plain"
+names = [".nvmrc", ".node-version"]
+
+# npm, declared as this runtime's own package ecosystem: four verbs vibe
+# drives without knowing one npm word. `install` and `remove` take their
+# items as "$@" — opaque argv elements, never a command string — and `list`
+# answers into the file vibe names, so npm's notices stay a log.
+#
+# One adapter and no hand-written migration entry: vibe synthesises the
+# `ecosystem:npm` migration from `list` + `install`, which is what carries a
+# runtime's global packages into a newly installed version.
+[[application.ecosystem]]
+id = "npm"
+name = "npm packages"
+description = "The global npm packages of one Node.js installation"
+
+[application.ecosystem.install]
+id = "npm-install"
+title = "Install npm packages into this Node.js installation"
+kind = "recipe"
+script = "ecosystem/npm-install.sh"
+
+[application.ecosystem.list]
+id = "npm-list"
+title = "List this Node.js installation's global npm packages"
+kind = "recipe"
+script = "ecosystem/npm-list.sh"
+
+[application.ecosystem.remove]
+id = "npm-remove"
+title = "Uninstall npm packages from this Node.js installation"
+kind = "recipe"
+script = "ecosystem/npm-remove.sh"
+
+[application.ecosystem.self_upgrade]
+id = "npm-self-upgrade"
+title = "Upgrade this Node.js installation's bundled npm"
+kind = "recipe"
+script = "ecosystem/npm-self-upgrade.sh"
 
 
 [template.versions]

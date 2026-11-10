@@ -39,7 +39,7 @@ vibe install -g org.vibevm.node/node@=12.0.0    # one exact release
 ```
 
 The template itself has a version of its own — the **template revision**,
-`1.0.0`, carried by the tag `v1.0.0`. A revision is never a Node.js version:
+`1.1.0`, carried by the tag `v1.1.0`. A revision is never a Node.js version:
 it is excluded from the version domain, and bumping it is how a fix to the
 manifest's shape reaches users without republishing anything per release.
 
@@ -89,6 +89,54 @@ so the system's own `node` answers again until `vibe app use node --default`.
 This is the Node.js another Vibe application can run on. A package whose
 launcher is declared `executable = "command:node"` runs whichever `node` is on
 PATH when it starts — the system's, or this one, reached through that link.
+
+## Version files, and npm as Node's own ecosystem
+
+The package declares the two files a Node project pins its runtime with, and
+npm as the runtime's own package ecosystem. Both are declarations Vibe reads;
+neither puts anything npm-shaped inside Vibe.
+
+```text
+echo 22.9.0 > .nvmrc
+cd .                             # the prompt hook switches to 22.9.0
+vibe app env --project           # or, without a hook, these lines
+vibe app use node org.vibevm.node/node@22.9.0 --write-version-file
+```
+
+| Declaration | What it is |
+| --- | --- |
+| `[[application.version_file]]` `format = "plain"` | `.nvmrc`, then `.node-version` — one bare version or channel name, which is what nvm, nodenv and fnm all read |
+| `[[application.ecosystem]]` `id = "npm"` | `install`, `list`, `remove` and `self_upgrade`, each one `recipe` step under `ecosystem/` |
+
+What the adapter buys, in commands:
+
+```text
+vibe app extras list node                  # what this version carries
+vibe app extras add node typescript        # and in every new version
+vibe app extras self-upgrade node          # the newest npm this line runs
+vibe app migrate node 20.18.0 22.9.0 --only ecosystem:npm   # carry globals
+```
+
+Three decisions in those scripts, each written in the script itself:
+
+- **`list` leaves out `npm` and `corepack`.** Both live inside every Node
+  distribution's own `lib/node_modules`: they are the runtime's managers, not
+  packages anybody added. Reporting them would make a fresh installation look
+  as though it already carried two globals, and carrying them into another
+  version would overwrite that version's own bundled pair.
+- **`self_upgrade` installs the newest npm *this* node line can run**, from
+  upstream's own compatibility ceilings — `npm@latest` on an older runtime
+  installs an npm that cannot start.
+- **`self_upgrade` succeeds when the upgrade could not be fetched but npm
+  still runs**, and fails when npm does not run. Its question is whether this
+  installation has a usable package manager, never whether the network was up.
+
+The package recommends no npm package of its own, so a fresh installation
+carries exactly what upstream ships. What *you* want in every new version is
+yours to declare, in `[slot.node.extras.npm]` of `~/.vibe/config.toml` — the
+general form of what `$NVM_DIR/default-packages` was, and
+`vibe app extras import node $NVM_DIR/default-packages` moves an existing one
+over in one command.
 
 ## Targets
 
