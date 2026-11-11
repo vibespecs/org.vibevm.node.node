@@ -2,13 +2,12 @@
 name = "node"
 group = "org.vibevm.node"
 kind = "app"
-version = "1.1.0"
+version = "26.13.0"
 epoch = 1
-template = true
 format = "normal"
 authors = ["Oleg Chirukhin"]
 license = "UPL-1.0"
-description = "Node.js {version}, the official upstream build, as a portable Vibe application putting node, npm and npx on PATH"
+description = "Node.js 26.13.0, the official upstream build, as a portable Vibe application putting node, npm and npx on PATH"
 keywords = ["node", "nodejs", "javascript", "runtime", "npm", "application"]
 homepage = "https://nodejs.org/"
 
@@ -66,32 +65,9 @@ kind = "recipe"
 script = "ecosystem/npm-self-upgrade.sh"
 
 
-[template.versions]
-kind = "json"
-url = "https://nodejs.org/dist/index.json"
-select = ""
-version_field = "version"
-strip_prefix = "v"
-min = "12.0.0"
-
-[template.digests]
-kind = "sha256sums"
-url = "https://nodejs.org/dist/v{version}/SHASUMS256.txt"
-
-[[template.channel]]
-rule = "truthy"
-name = "lts"
-from = "lts"
-
-[[template.channel]]
-rule = "value"
-prefix = "lts"
-from = "lts"
-
-
 [[installer_options]]
 id = "linux-x64"
-name = "Node.js {version}"
+name = "Node.js 26.13.0"
 platform = "linux"
 platform_name = "Linux (glibc)"
 arch = "x86_64"
@@ -100,12 +76,12 @@ path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
-title = "Download and unpack the Node.js {version} runtime"
+title = "Download and unpack the Node.js 26.13.0 runtime"
 kind = "archive"
 format = "tar_gz"
-source = "https://nodejs.org/dist/v{version}/node-v{version}-linux-x64.tar.gz"
-sha256 = "{sha256:node-v{version}-linux-x64.tar.gz}"
-payload_root = "node-v{version}-linux-x64"
+source = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.gz"
+sha256 = "5848553868b402d3fabb5b09270649977780a390f832155721025a08b5104455"
+payload_root = "node-v26.13.0-linux-x64"
 
 [[installer_options.launchers]]
 id = "node"
@@ -135,7 +111,7 @@ kind = "command"
 
 [[installer_options]]
 id = "linux-arm64"
-name = "Node.js {version}"
+name = "Node.js 26.13.0"
 platform = "linux"
 platform_name = "Linux (glibc)"
 arch = "aarch64"
@@ -144,12 +120,12 @@ path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
-title = "Download and unpack the Node.js {version} runtime"
+title = "Download and unpack the Node.js 26.13.0 runtime"
 kind = "archive"
 format = "tar_gz"
-source = "https://nodejs.org/dist/v{version}/node-v{version}-linux-arm64.tar.gz"
-sha256 = "{sha256:node-v{version}-linux-arm64.tar.gz}"
-payload_root = "node-v{version}-linux-arm64"
+source = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-arm64.tar.gz"
+sha256 = "439e9c438acdf6a6ffe47418da709153d66c4bed812e30a473faacb107dd2791"
+payload_root = "node-v26.13.0-linux-arm64"
 
 [[installer_options.launchers]]
 id = "node"
@@ -179,22 +155,21 @@ kind = "command"
 
 [[installer_options]]
 id = "linux-musl-x64"
-name = "Node.js {version}"
+name = "Node.js 26.13.0"
 platform = "linux-musl"
 platform_name = "Linux (musl: Alpine and others)"
 arch = "x86_64"
 arch_name = "Intel/AMD 64-bit"
 path_dirs = ["bin"]
-template_optional = true
 
 [[installer_options.steps]]
 id = "node"
-title = "Download and unpack the Node.js {version} runtime"
+title = "Download and unpack the Node.js 26.13.0 runtime"
 kind = "archive"
 format = "tar_gz"
-source = "https://nodejs.org/dist/v{version}/node-v{version}-linux-x64-musl.tar.gz"
-sha256 = "{sha256:node-v{version}-linux-x64-musl.tar.gz}"
-payload_root = "node-v{version}-linux-x64-musl"
+source = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64-musl.tar.gz"
+sha256 = "9ba151a0510789460837798f8a0632623ede121a695754a76a181baf95237bd2"
+payload_root = "node-v26.13.0-linux-x64-musl"
 
 [[installer_options.launchers]]
 id = "node"
@@ -224,7 +199,7 @@ kind = "command"
 
 [[installer_options]]
 id = "macos-x64"
-name = "Node.js {version}"
+name = "Node.js 26.13.0"
 platform = "macos"
 platform_name = "macOS"
 arch = "x86_64"
@@ -233,12 +208,12 @@ path_dirs = ["bin"]
 
 [[installer_options.steps]]
 id = "node"
-title = "Download and unpack the Node.js {version} runtime"
+title = "Download and unpack the Node.js 26.13.0 runtime"
 kind = "archive"
 format = "tar_gz"
-source = "https://nodejs.org/dist/v{version}/node-v{version}-darwin-x64.tar.gz"
-sha256 = "{sha256:node-v{version}-darwin-x64.tar.gz}"
-payload_root = "node-v{version}-darwin-x64"
+source = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-x64.tar.gz"
+sha256 = "525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e"
+payload_root = "node-v26.13.0-darwin-x64"
 
 [[installer_options.launchers]]
 id = "node"
@@ -268,22 +243,21 @@ kind = "command"
 
 [[installer_options]]
 id = "macos-arm64"
-name = "Node.js {version}"
+name = "Node.js 26.13.0"
 platform = "macos"
 platform_name = "macOS"
 arch = "aarch64"
 arch_name = "Apple silicon"
 path_dirs = ["bin"]
-template_optional = true
 
 [[installer_options.steps]]
 id = "node"
-title = "Download and unpack the Node.js {version} runtime"
+title = "Download and unpack the Node.js 26.13.0 runtime"
 kind = "archive"
 format = "tar_gz"
-source = "https://nodejs.org/dist/v{version}/node-v{version}-darwin-arm64.tar.gz"
-sha256 = "{sha256:node-v{version}-darwin-arm64.tar.gz}"
-payload_root = "node-v{version}-darwin-arm64"
+source = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-arm64.tar.gz"
+sha256 = "d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6"
+payload_root = "node-v26.13.0-darwin-arm64"
 
 [[installer_options.launchers]]
 id = "node"
@@ -313,7 +287,7 @@ kind = "command"
 
 [[installer_options]]
 id = "windows-x64"
-name = "Node.js {version}"
+name = "Node.js 26.13.0"
 platform = "windows"
 platform_name = "Windows"
 arch = "x86_64"
@@ -322,12 +296,12 @@ path_dirs = ["."]
 
 [[installer_options.steps]]
 id = "node"
-title = "Download and unpack the Node.js {version} runtime"
+title = "Download and unpack the Node.js 26.13.0 runtime"
 kind = "archive"
 format = "zip"
-source = "https://nodejs.org/dist/v{version}/node-v{version}-win-x64.zip"
-sha256 = "{sha256:node-v{version}-win-x64.zip}"
-payload_root = "node-v{version}-win-x64"
+source = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-win-x64.zip"
+sha256 = "dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a"
+payload_root = "node-v26.13.0-win-x64"
 
 [[installer_options.launchers]]
 id = "node"
@@ -357,22 +331,21 @@ kind = "command"
 
 [[installer_options]]
 id = "windows-arm64"
-name = "Node.js {version}"
+name = "Node.js 26.13.0"
 platform = "windows"
 platform_name = "Windows"
 arch = "aarch64"
 arch_name = "ARM 64-bit"
 path_dirs = ["."]
-template_optional = true
 
 [[installer_options.steps]]
 id = "node"
-title = "Download and unpack the Node.js {version} runtime"
+title = "Download and unpack the Node.js 26.13.0 runtime"
 kind = "archive"
 format = "zip"
-source = "https://nodejs.org/dist/v{version}/node-v{version}-win-arm64.zip"
-sha256 = "{sha256:node-v{version}-win-arm64.zip}"
-payload_root = "node-v{version}-win-arm64"
+source = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-win-arm64.zip"
+sha256 = "a9427139595156ef484e1fb08957676e09d4232368dd1743a2a9f93f3d241b14"
+payload_root = "node-v26.13.0-win-arm64"
 
 [[installer_options.launchers]]
 id = "node"
