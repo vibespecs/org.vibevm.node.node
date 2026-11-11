@@ -8,6 +8,7 @@ one pinned archive and verifies it against its SHA-256 digest.
 | Archive | From | Digest from |
 | --- | --- | --- |
 | `node-v<version>-<platform>.tar.gz` / `.zip` | `https://nodejs.org/dist/v<version>/` | `SHASUMS256.txt` of that release |
+| `node-v<version>.tar.gz` (the source build) | the same directory | the same document |
 
 ```text
 vibe install -g org.vibevm.node/node
@@ -15,6 +16,11 @@ node --version
 npm --version
 npx --version
 ```
+
+Every Linux and macOS target also has a **source** installer option beside its
+prebuilt one — [Building from source](#building-from-source-what-nvm-install--s-is)
+— under its own platform id, so it is asked for and never detected: the line
+above goes on installing the prebuilt build, as it always did.
 
 ## One template, every release
 
@@ -39,7 +45,7 @@ vibe install -g org.vibevm.node/node@=12.0.0    # one exact release
 ```
 
 The template itself has a version of its own — the **template revision**,
-`1.1.0`, carried by the tag `v1.1.0`. A revision is never a Node.js version:
+`1.2.0`, carried by the tag `v1.2.0`. A revision is never a Node.js version:
 it is excluded from the version domain, and bumping it is how a fix to the
 manifest's shape reaches users without republishing anything per release.
 
@@ -140,22 +146,34 @@ over in one command.
 
 ## Targets
 
-| Installer option | `--platform` / `--arch` | Archive |
-| --- | --- | --- |
-| `linux-x64` | `linux` / `x86_64` | `node-v<version>-linux-x64.tar.gz` |
-| `linux-arm64` | `linux` / `aarch64` | `node-v<version>-linux-arm64.tar.gz` |
-| `linux-musl-x64` | `linux-musl` / `x86_64` | `node-v<version>-linux-x64-musl.tar.gz` |
-| `macos-x64` | `macos` / `x86_64` | `node-v<version>-darwin-x64.tar.gz` |
-| `macos-arm64` | `macos` / `aarch64` | `node-v<version>-darwin-arm64.tar.gz` |
-| `windows-x64` | `windows` / `x86_64` | `node-v<version>-win-x64.zip` |
-| `windows-arm64` | `windows` / `aarch64` | `node-v<version>-win-arm64.zip` |
+| Installer option | `--platform` / `--arch` | Archive | Kind |
+| --- | --- | --- | --- |
+| `linux-x64` | `linux` / `x86_64` | `node-v<version>-linux-x64.tar.gz` | prebuilt |
+| `linux-arm64` | `linux` / `aarch64` | `node-v<version>-linux-arm64.tar.gz` | prebuilt |
+| `linux-musl-x64` | `linux-musl` / `x86_64` | `node-v<version>-linux-x64-musl.tar.gz` | prebuilt |
+| `macos-x64` | `macos` / `x86_64` | `node-v<version>-darwin-x64.tar.gz` | prebuilt |
+| `macos-arm64` | `macos` / `aarch64` | `node-v<version>-darwin-arm64.tar.gz` | prebuilt |
+| `windows-x64` | `windows` / `x86_64` | `node-v<version>-win-x64.zip` | prebuilt |
+| `windows-arm64` | `windows` / `aarch64` | `node-v<version>-win-arm64.zip` | prebuilt |
+| `source-linux-x64` | `linux-source` / `x86_64` | `node-v<version>.tar.gz` | source |
+| `source-linux-arm64` | `linux-source` / `aarch64` | `node-v<version>.tar.gz` | source |
+| `source-macos-x64` | `macos-source` / `x86_64` | `node-v<version>.tar.gz` | source |
+| `source-macos-arm64` | `macos-source` / `aarch64` | `node-v<version>.tar.gz` | source |
 
 Vibe picks the option of the host's platform and architecture and asks when it
 cannot decide. A musl system (Alpine and others) is detected as `linux` like
 any other Linux, so install there with `vibe install -g org.vibevm.node/node
 --platform linux-musl`.
 
-Three of those seven rows are declared `template_optional = true`, because
+Only `linux`, `macos` and `windows` are detected; `linux-musl`, `linux-source`
+and `macos-source` are "selectable only explicitly" (PROP-059
+`#installer-options`). That is what keeps the bare `vibe install -g
+org.vibevm.node/node` deciding by itself on every host: the four source rows
+sit under platform ids nothing detects, so they never compete with the
+prebuilt row of the pair the host actually is, and a source build is something
+you ask for.
+
+Three of the seven prebuilt rows are declared `template_optional = true`, because
 upstream has not built them for every release in the window — measured over
 the 406 releases from 12.0.0 to 26.13.0:
 
@@ -172,12 +190,87 @@ exist; asking for a dropped target refuses by name (`no_option`). Every other
 row is required, and a release missing one of those is a loud refusal rather
 than a quiet manifest. All seven are present together only from 26.8.0 up.
 
+The four source rows are never optional: `node-v<version>.tar.gz` is in every
+release's `SHASUMS256.txt`, all the way down to 12.0.0. So a source build is
+also the way to get a target upstream never shipped a binary for — Node 14 on
+Apple silicon, say, where `macos-arm64` is dropped from the rendered manifest
+but `source-macos-arm64` is not.
+
+## Building from source: what `nvm install -s` is
+
+```text
+vibe install -g org.vibevm.node/node@22.23.4 --platform linux-source
+vibe install -g org.vibevm.node/node@22.23.4 --platform linux-source --set jobs=6
+vibe install -g org.vibevm.node/node@22.23.4 --platform macos-source --installer source-macos-arm64
+```
+
+`--platform linux-source` is the whole of it on a 64-bit host: that platform
+has one row per architecture and the host's own architecture is still detected
+inside it, so exactly one option remains. `--installer` names the row when you
+want to be explicit, or when you are installing for the architecture you are
+not on.
+
+The source options fetch Node's **own source tarball** from the same release
+directory the prebuilt archives come from, verify it against the same
+`SHASUMS256.txt`, and then do what `nvm install -s` does — `./configure
+--prefix`, `make -j`, `make -j install` (nvm's `nvm_install_source`). What
+comes out is the same tree the official tarball carries — `make install
+--prefix` is how upstream makes it — so the payload layout, `path_dirs =
+["bin"]` and all three launchers are the prebuilt rows' unchanged, and nothing
+downstream has to know which row produced the payload.
+
+| | |
+| --- | --- |
+| Platforms | `linux-source` and `macos-source`, both architectures — explicit platform ids, because a source build is a choice and not a detected default. There is no Windows row: nvm builds from source on POSIX only |
+| Archive | `node-v<version>.tar.gz`. nvm prefers `.tar.xz` where the release supports it (`nvm_get_artifact_compression`); this package takes `.tar.gz`, which every release in the window has and which the same digest document lists — so the source rows need no digest variable the template did not already have |
+| Steps | `source` (fetch and verify, `needs = ["network"]`), then `build` (the recipe `recipes/build-from-source.sh`) |
+| Result | `owned` — the build writes `$VIBE_OUT`, which Vibe places in a storage library. The tree is relocatable: `make install` writes `bin/npm`, `bin/npx` and `bin/corepack` as relative symbolic links, and `node` finds its own tree from `process.execPath` |
+
+### The one parameter: `jobs`
+
+| | |
+| --- | --- |
+| Spelling | `--set jobs=N`, an `integer` between 0 and 1024 |
+| Default | `0`, which means *nvm's own default*: one less than the number of cores when there are more than two, otherwise a single job (`nvm_get_make_jobs`) |
+
+A manifest default is a constant and the core count is a host fact, so `0` is
+the honest way to spell "whatever nvm would have chosen": the recipe counts the
+cores itself and says what it decided. `--set jobs=6` is an exact answer and is
+used as given; `jobs` reaches the recipe as `VIBE_PARAM_JOBS`, the environment
+channel PROP-065 `#parameters` defines, never interpolated into a command.
+
+### The toolchain it needs, and what happens when it is missing
+
+The `build` step declares `needs = ["command:make", "command:python3",
+"command:cc", "command:c++"]` — Node's own build requirements, and the exact
+programs its `configure` reaches for. Vibe checks them **before the
+installation starts**, so a machine without a compiler does not discover it
+after fetching and unpacking 102 MiB of source:
+
+```text
+✗ need_unmet  step `build` of `org.vibevm.node/node@22.23.4` needs `command:cc`,
+              which this host does not provide; nothing was downloaded or run
+  fix   provide command:cc and retry, or select another installer option
+  see   spec://org.vibevm.core/vibevm/common/PROP-065#needs
+```
+
+The command exits `2` — refused before any effect — and leaves nothing behind.
+`vibe app plan … --platform linux-source` answers the same way without
+installing anything, which is how to ask a machine whether it could build
+before asking it to.
+
+The compiler is Node's own default, `cc` and `c++`. An exported `CC` / `CXX`
+reaches the recipe like any other inherited variable and wins, which is also
+where nvm ends up (`CC=${CC:-cc} CXX=${CXX:-c++}`).
+
 ## How the three launchers run
 
 The archive is unpacked with its own top-level directory stripped
 (`payload_root`), so the payload is Node's own tree: `bin/node` and
 `lib/node_modules/npm/` on Linux and macOS, `node.exe` and
-`node_modules/npm/` on Windows.
+`node_modules/npm/` on Windows. A source build produces the same tree, because
+`make install --prefix` is what upstream runs to make the tarball — which is
+why the source options repeat these three rows unchanged.
 
 All three launchers run the payload's own `node` executable:
 
@@ -304,11 +397,15 @@ publishing another release:
 - the two published tags: they are *not* re-rendered, by design.
 
 The template's regression gate is in the vibe repository, not here:
-`cargo test -p vibe-template --test node_golden` renders this file at
-`24.22.2` and `22.23.4` and compares it, byte for byte, with the manifests
-the two tags carry (modulo the generator's four header lines and the `size`
-lines), reading upstream's own frozen `index.json` subset and
-`SHASUMS256.txt` documents. `cargo test -p vibe-cli --test cli_template_node`
+`cargo test -p vibe-template --test node_golden` renders a **copy** of this
+file at `24.22.2` and `22.23.4` and compares it, byte for byte, with the
+manifests the two tags carry (modulo the generator's four header lines and the
+`size` lines), reading upstream's own frozen `index.json` subset and
+`SHASUMS256.txt` documents. The copy is
+`crates/vibe-template/tests/fixtures/node/vibe.toml`, and it is pinned at the
+revision whose render the two tags are: a revision that adds an installer row
+the tags do not have — `1.2.0` and its four source rows — is a divergence that
+belongs in the fixture's own history, not a break of the golden proof. `cargo test -p vibe-cli --test cli_template_node`
 drives the channels and the optional rows through the real binary. A change
 to this file that breaks either is a change that would have broken an
 install.

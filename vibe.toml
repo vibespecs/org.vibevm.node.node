@@ -2,7 +2,7 @@
 name = "node"
 group = "org.vibevm.node"
 kind = "app"
-version = "1.1.0"
+version = "1.2.0"
 epoch = 1
 template = true
 format = "normal"
@@ -398,3 +398,290 @@ executable = "node.exe"
 args = ["$app_root/node_modules/npm/bin/npx-cli.js"]
 kind = "command"
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Source builds — what `nvm install -s` is
+#
+# Four more rows, Linux and macOS only, which build Node from upstream's own
+# source tarball instead of unpacking a prebuilt one. Everything else about
+# them is the same as the binary rows above: the same release origin, the same
+# `SHASUMS256.txt` digest, the same payload layout, the same `path_dirs` and
+# the same three launchers — because `make install --prefix` produces exactly
+# the tree the official tarball carries.
+#
+# The archive is `node-v{version}.tar.gz`. nvm prefers `.tar.xz` wherever the
+# release supports it (`nvm_get_artifact_compression`, nvm.sh 3794-3806); we
+# take `.tar.gz`, which every release in this template's window has and which
+# the same `SHASUMS256.txt` lists, so the source rows need no digest variable
+# beyond the one `[template.digests]` already answers.
+#
+# One row per architecture, not one per platform: `[[installer_options]].arch`
+# is required by `PROP-059#installer-options`, so an arch-agnostic row cannot
+# be spelled. The two rows of a platform are byte-identical but for `arch`.
+#
+# The platform ids are `linux-source` and `macos-source`, not `linux` and
+# `macos`. A source build is a deliberate choice, never a detected default:
+# `PROP-059#installer-options` auto-detects only `linux`, `windows` and `macos`,
+# and "other ids are selectable only explicitly" — so these rows are reached by
+# `--platform linux-source`, and the bare `vibe install -g org.vibevm.node/node`
+# goes on selecting the prebuilt row with nothing to ask about. Putting them
+# under the host's own platform id would have made every unattended install of
+# Linux and macOS a `selection_required` refusal, because two rows would match
+# the detected pair and the selector has no preference marker. `linux-musl`
+# above is the same device, already in this file.
+#
+# The build needs a toolchain, and says so with `needs`
+# (`PROP-065#needs`): a machine missing `make`, `python3`, `cc` or `c++` is
+# refused before the first byte is downloaded, naming the step and what is
+# missing. There is no Windows row: nvm builds from source on POSIX only.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[installer_options]]
+id = "source-linux-x64"
+name = "Node.js {version}, built from source"
+platform = "linux-source"
+platform_name = "Linux (built from source)"
+arch = "x86_64"
+arch_name = "Intel/AMD 64-bit"
+path_dirs = ["bin"]
+
+[[installer_options.parameters]]
+id = "jobs"
+name = "Parallel make jobs"
+description = "How many compiler jobs `make -j` runs. 0 means nvm's own choice: one less than the number of cores when there are more than two, otherwise a single job."
+type = "integer"
+default = 0
+min = 0
+max = 1024
+
+[[installer_options.steps]]
+id = "source"
+title = "Download and verify the Node.js {version} source tarball"
+kind = "sources"
+needs = ["network"]
+
+[[installer_options.steps.sources]]
+name = "node"
+url = "https://nodejs.org/dist/v{version}/node-v{version}.tar.gz"
+sha256 = "{sha256:node-v{version}.tar.gz}"
+
+[[installer_options.steps]]
+id = "build"
+title = "Build Node.js {version}: ./configure --prefix, make, make install"
+kind = "recipe"
+interpreter = "posix_sh"
+script = "recipes/build-from-source.sh"
+needs = ["command:make", "command:python3", "command:cc", "command:c++"]
+
+[[installer_options.launchers]]
+id = "node"
+name = "node"
+description = "The Node.js runtime"
+executable = "bin/node"
+kind = "command"
+default = true
+
+[[installer_options.launchers]]
+id = "npm"
+name = "npm"
+description = "The npm package manager"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npm-cli.js"]
+kind = "command"
+
+[[installer_options.launchers]]
+id = "npx"
+name = "npx"
+description = "Run a command from an npm package"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
+kind = "command"
+
+
+
+[[installer_options]]
+id = "source-linux-arm64"
+name = "Node.js {version}, built from source"
+platform = "linux-source"
+platform_name = "Linux (built from source)"
+arch = "aarch64"
+arch_name = "ARM 64-bit"
+path_dirs = ["bin"]
+
+[[installer_options.parameters]]
+id = "jobs"
+name = "Parallel make jobs"
+description = "How many compiler jobs `make -j` runs. 0 means nvm's own choice: one less than the number of cores when there are more than two, otherwise a single job."
+type = "integer"
+default = 0
+min = 0
+max = 1024
+
+[[installer_options.steps]]
+id = "source"
+title = "Download and verify the Node.js {version} source tarball"
+kind = "sources"
+needs = ["network"]
+
+[[installer_options.steps.sources]]
+name = "node"
+url = "https://nodejs.org/dist/v{version}/node-v{version}.tar.gz"
+sha256 = "{sha256:node-v{version}.tar.gz}"
+
+[[installer_options.steps]]
+id = "build"
+title = "Build Node.js {version}: ./configure --prefix, make, make install"
+kind = "recipe"
+interpreter = "posix_sh"
+script = "recipes/build-from-source.sh"
+needs = ["command:make", "command:python3", "command:cc", "command:c++"]
+
+[[installer_options.launchers]]
+id = "node"
+name = "node"
+description = "The Node.js runtime"
+executable = "bin/node"
+kind = "command"
+default = true
+
+[[installer_options.launchers]]
+id = "npm"
+name = "npm"
+description = "The npm package manager"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npm-cli.js"]
+kind = "command"
+
+[[installer_options.launchers]]
+id = "npx"
+name = "npx"
+description = "Run a command from an npm package"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
+kind = "command"
+
+
+
+[[installer_options]]
+id = "source-macos-x64"
+name = "Node.js {version}, built from source"
+platform = "macos-source"
+platform_name = "macOS (built from source)"
+arch = "x86_64"
+arch_name = "Intel 64-bit"
+path_dirs = ["bin"]
+
+[[installer_options.parameters]]
+id = "jobs"
+name = "Parallel make jobs"
+description = "How many compiler jobs `make -j` runs. 0 means nvm's own choice: one less than the number of cores when there are more than two, otherwise a single job."
+type = "integer"
+default = 0
+min = 0
+max = 1024
+
+[[installer_options.steps]]
+id = "source"
+title = "Download and verify the Node.js {version} source tarball"
+kind = "sources"
+needs = ["network"]
+
+[[installer_options.steps.sources]]
+name = "node"
+url = "https://nodejs.org/dist/v{version}/node-v{version}.tar.gz"
+sha256 = "{sha256:node-v{version}.tar.gz}"
+
+[[installer_options.steps]]
+id = "build"
+title = "Build Node.js {version}: ./configure --prefix, make, make install"
+kind = "recipe"
+interpreter = "posix_sh"
+script = "recipes/build-from-source.sh"
+needs = ["command:make", "command:python3", "command:cc", "command:c++"]
+
+[[installer_options.launchers]]
+id = "node"
+name = "node"
+description = "The Node.js runtime"
+executable = "bin/node"
+kind = "command"
+default = true
+
+[[installer_options.launchers]]
+id = "npm"
+name = "npm"
+description = "The npm package manager"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npm-cli.js"]
+kind = "command"
+
+[[installer_options.launchers]]
+id = "npx"
+name = "npx"
+description = "Run a command from an npm package"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
+kind = "command"
+
+
+
+[[installer_options]]
+id = "source-macos-arm64"
+name = "Node.js {version}, built from source"
+platform = "macos-source"
+platform_name = "macOS (built from source)"
+arch = "aarch64"
+arch_name = "Apple silicon"
+path_dirs = ["bin"]
+
+[[installer_options.parameters]]
+id = "jobs"
+name = "Parallel make jobs"
+description = "How many compiler jobs `make -j` runs. 0 means nvm's own choice: one less than the number of cores when there are more than two, otherwise a single job."
+type = "integer"
+default = 0
+min = 0
+max = 1024
+
+[[installer_options.steps]]
+id = "source"
+title = "Download and verify the Node.js {version} source tarball"
+kind = "sources"
+needs = ["network"]
+
+[[installer_options.steps.sources]]
+name = "node"
+url = "https://nodejs.org/dist/v{version}/node-v{version}.tar.gz"
+sha256 = "{sha256:node-v{version}.tar.gz}"
+
+[[installer_options.steps]]
+id = "build"
+title = "Build Node.js {version}: ./configure --prefix, make, make install"
+kind = "recipe"
+interpreter = "posix_sh"
+script = "recipes/build-from-source.sh"
+needs = ["command:make", "command:python3", "command:cc", "command:c++"]
+
+[[installer_options.launchers]]
+id = "node"
+name = "node"
+description = "The Node.js runtime"
+executable = "bin/node"
+kind = "command"
+default = true
+
+[[installer_options.launchers]]
+id = "npm"
+name = "npm"
+description = "The npm package manager"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npm-cli.js"]
+kind = "command"
+
+[[installer_options.launchers]]
+id = "npx"
+name = "npx"
+description = "Run a command from an npm package"
+executable = "bin/node"
+args = ["$app_root/lib/node_modules/npm/bin/npx-cli.js"]
+kind = "command"
